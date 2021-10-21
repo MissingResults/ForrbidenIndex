@@ -1,53 +1,33 @@
-import express, { query } from 'express';
-
-import { Sequelize } from 'sequelize';
-const sequelize = new Sequelize({
-    dialect: "sqlite",
-    storage:'xfree.sqlite3'
-})
+import express, { query } from "express";
+import Querry from "./models/querry.model";
+import bodyParser from "body-parser";
 const app = express();
-
-app.get('/post', async(req, res) => {
-    let q = "x"
-    const response = await sequelize.query(
-        `SELECT couter FROM 'xfree' WHERE querry='${q}'`
-        )
-        if(response[0][0]==null){
-            try{ 
-                await sequelize.query(
-                    "INSERT INTO 'xfree' VALUES ('x',50)"
-                    )
-                res.send("gicik")
-            }catch (err){ console.log(err)}
-        }
-        else{
-            //@ts-ignore
-            let {couter}=response[0][0]
-            console.log(couter);
-        }
-   /*  try{ 
-        await sequelize.query(
-            `SELECT counter FROM 'xfree' WHERE querry=${q}`
-            )
-        res.send("gicik")
-    }catch (err){ console.log(err)} */
-    /* try{ 
-        await sequelize.query(
-            "INSERT INTO 'xfree' VALUES ('x',50)"
-            )
-        res.send("gicik")
-    }catch (err){ console.log(err)} */
-})
-app.get('/get', async(req, res) => {
-    try{ 
-        await sequelize.query(
-            "SELECT * FROM 'xfree'"
-            )
-        res.send(await sequelize.query(
-            "SELECT * FROM 'xfree'"
-            ))
-    }catch (err){ console.log(err)}
-})
-app.listen(5000,()=>{
-    console.log("elo")
-})
+app.use(bodyParser.json());
+app.post("/post", async (req, res) => {
+  console.log(req.body);
+  try {
+    var body: string = req.body.query.searchword;
+    const dbResponse = await Querry.findOne({
+      where: {
+        querry: body,
+      },
+    });
+    if (dbResponse) {
+      //@ts-ignore
+      dbResponse.counter = dbResponse.counter + 1;
+      //@ts-ignore
+      await dbResponse.save();
+      res.send(dbResponse);
+    } else {
+      await Querry.create({
+        querry: body,
+        counter: 1,
+      }).then((result) => {
+        res.send(result);
+      });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+app.listen(5000, () => {});
